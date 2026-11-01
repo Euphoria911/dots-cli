@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: dots-x86_64-unknown-linux-gnu.tar.gz
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            archive: dots-x86_64-apple-darwin.tar.gz
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            archive: dots-aarch64-apple-darwin.tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: dots-x86_64-pc-windows-msvc.zip
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar czf ../../../${{ matrix.archive }} dots
+          cd ../../..
+          shasum -a 256 ${{ matrix.archive }} > ${{ matrix.archive }}.sha256
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path target/${{ matrix.target }}/release/dots.exe -DestinationPath ${{ matrix.archive }}
+          (Get-FileHash ${{ matrix.archive }} -Algorithm SHA256).Hash + "  ${{ matrix.archive }}" | Out-File -Encoding ascii ${{ matrix.archive }}.sha256
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ matrix.archive }}
+            ${{ matrix.archive }}.sha256
