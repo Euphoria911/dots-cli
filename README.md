@@ -70,6 +70,13 @@ dots link
 
 All commands accept `--profile <name>` to target a specific profile, and all commands accept `--repo <path>` (or the `DOTS_REPO` env var, or auto-discovery if you're `cd`'d inside a repo).
 
+### Environment variables
+
+| Variable | Purpose |
+| --- | --- |
+| `DOTS_REPO` | Path to the dotfiles repo. Same as `--repo`. |
+| `DOTS_HOME` | Override the home directory. Rarely useful outside tests and unusual setups where the OS-reported home differs from where you keep dotfiles. |
+
 ## Profiles
 
 Profiles live in `dots.toml`. Each profile has a `files` list, and optionally `inherits` another profile.

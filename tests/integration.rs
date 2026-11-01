@@ -33,17 +33,10 @@ impl Harness {
     fn run(&self, args: &[&str]) -> std::process::Output {
         let mut cmd = Command::new(bin());
         cmd.arg("--repo").arg(&self.repo).args(args);
-        // Override HOME on both unix and windows so dirs::home_dir() uses our fake home.
-        #[cfg(unix)]
-        cmd.env("HOME", &self.home);
-        #[cfg(windows)]
-        {
-            cmd.env("USERPROFILE", &self.home);
-            // dirs on Windows prefers USERPROFILE but may read FOLDERID_Profile via WinAPI.
-            // Clearing HOMEPATH/HOMEDRIVE and setting USERPROFILE is the standard override.
-            cmd.env("HOMEDRIVE", "");
-            cmd.env("HOMEPATH", "");
-        }
+        // Use the DOTS_HOME escape hatch. Setting HOME/USERPROFILE doesn't work on
+        // Windows because the `dirs` crate calls SHGetKnownFolderPath, which
+        // reads the user profile from the OS token rather than env vars.
+        cmd.env("DOTS_HOME", &self.home);
         cmd.output().expect("spawn")
     }
 

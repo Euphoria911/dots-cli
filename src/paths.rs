@@ -2,7 +2,15 @@ use anyhow::{bail, Context, Result};
 use std::path::{Component, Path, PathBuf};
 
 /// Returns the user's home directory, or an error if it can't be found.
+///
+/// Honors `DOTS_HOME` as an escape hatch (useful for tests and unusual setups
+/// where the OS-reported home differs from where the user wants dotfiles).
 pub fn home_dir() -> Result<PathBuf> {
+    if let Ok(h) = std::env::var("DOTS_HOME") {
+        if !h.is_empty() {
+            return Ok(PathBuf::from(h));
+        }
+    }
     dirs::home_dir().context("could not determine home directory")
 }
 
